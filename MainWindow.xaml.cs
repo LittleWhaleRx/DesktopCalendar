@@ -459,20 +459,23 @@ public partial class MainWindow : Window
             _windowHandle = new WindowInteropHelper(this).Handle;
         }
 
-        var success = DesktopHost.AttachToDesktop(_windowHandle);
-        _isDesktopMode = success;
-        StatusText.Text = success ? "已嵌入桌面" : "桌面嵌入失败，已保持普通窗口";
+        var result = DesktopHost.AttachToDesktop(_windowHandle);
+        _isDesktopMode = result.Attached;
+        StatusText.Text = result.Attached ? result.Message : $"{result.Message}，已保持普通窗口";
 
-        if (!success)
+        if (!result.Attached)
         {
+            DesktopHost.Detach(_windowHandle);
             _store.Ui.DesktopMode = false;
+            _isLoading = true;
             DesktopModeCheck.IsChecked = false;
+            _isLoading = false;
         }
     }
 
     private void ExitDesktopMode()
     {
-        if (_windowHandle != IntPtr.Zero && _isDesktopMode)
+        if (_windowHandle != IntPtr.Zero)
         {
             DesktopHost.Detach(_windowHandle);
         }
