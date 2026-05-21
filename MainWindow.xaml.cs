@@ -41,7 +41,8 @@ public partial class MainWindow : Window
         RestoreWindowPlacement();
 
         OpacitySlider.Value = _store.Ui.OpacityPercent;
-        DesktopModeCheck.IsChecked = _store.Ui.DesktopMode;
+        _store.Ui.DesktopMode = false;
+        DesktopModeCheck.IsChecked = false;
         LockCheck.IsChecked = _store.Ui.LockPosition;
 
         _isLoading = false;
@@ -51,10 +52,7 @@ public partial class MainWindow : Window
         RenderCalendar();
         LoadSelectedDate();
 
-        if (_store.Ui.DesktopMode)
-        {
-            Dispatcher.BeginInvoke(TryEnterDesktopMode);
-        }
+        CalendarStore.Save(_dataPath, _store);
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)
@@ -461,7 +459,8 @@ public partial class MainWindow : Window
 
         var result = DesktopHost.AttachToDesktop(_windowHandle);
         _isDesktopMode = result.Attached;
-        StatusText.Text = result.Attached ? result.Message : $"{result.Message}，已保持普通窗口";
+        StatusText.Text = result.Attached ? "已贴附桌面" : $"{result.Message}，已保持普通窗口";
+        ShowInTaskbar = !result.Attached;
 
         if (!result.Attached)
         {
@@ -481,19 +480,20 @@ public partial class MainWindow : Window
         }
 
         _isDesktopMode = false;
+        ShowInTaskbar = true;
         StatusText.Text = "普通窗口模式";
     }
 
     private void RestoreWindowPlacement()
     {
         var placement = _store.Ui.Window;
-        if (placement.Width >= MinWidth && placement.Height >= MinHeight)
+        if (IsUsableNumber(placement.Width) && IsUsableNumber(placement.Height) && placement.Width >= MinWidth && placement.Height >= MinHeight)
         {
             Width = placement.Width;
             Height = placement.Height;
         }
 
-        if (placement.Left > -10000 && placement.Top > -10000)
+        if (IsUsableNumber(placement.Left) && IsUsableNumber(placement.Top) && placement.Left > -10000 && placement.Top > -10000)
         {
             Left = placement.Left;
             Top = placement.Top;
@@ -503,11 +503,18 @@ public partial class MainWindow : Window
             Left = SystemParameters.WorkArea.Right - Width - 42;
             Top = SystemParameters.WorkArea.Top + 42;
         }
+
+        SaveWindowPlacement();
     }
 
     private void SaveWindowPlacement()
     {
         if (WindowState != WindowState.Normal)
+        {
+            return;
+        }
+
+        if (!IsUsableNumber(Left) || !IsUsableNumber(Top) || !IsUsableNumber(Width) || !IsUsableNumber(Height))
         {
             return;
         }
@@ -526,6 +533,11 @@ public partial class MainWindow : Window
     private static string DayKey(DateTime day)
     {
         return day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    }
+
+    private static bool IsUsableNumber(double value)
+    {
+        return !double.IsNaN(value) && !double.IsInfinity(value);
     }
 }
 
@@ -563,6 +575,8 @@ public sealed class CalendarStore
 
     public static void Save(string path, CalendarStore store)
     {
+        Sanitize(store);
+
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
         {
@@ -574,6 +588,42 @@ public sealed class CalendarStore
             WriteIndented = true
         });
         File.WriteAllText(path, json);
+    }
+
+    private static void Sanitize(CalendarStore store)
+    {
+        store.Ui ??= new UiSettings();
+        store.Ui.Window ??= new WidgetWindowPlacement();
+
+        if (!IsFinite(store.Ui.Window.Left))
+        {
+            store.Ui.Window.Left = 60;
+        }
+
+        if (!IsFinite(store.Ui.Window.Top))
+        {
+            store.Ui.Window.Top = 60;
+        }
+
+        if (!IsFinite(store.Ui.Window.Width) || store.Ui.Window.Width < 720)
+        {
+            store.Ui.Window.Width = 920;
+        }
+
+        if (!IsFinite(store.Ui.Window.Height) || store.Ui.Window.Height < 480)
+        {
+            store.Ui.Window.Height = 590;
+        }
+
+        if (!IsFinite(store.Ui.OpacityPercent) || store.Ui.OpacityPercent < 55 || store.Ui.OpacityPercent > 95)
+        {
+            store.Ui.OpacityPercent = 82;
+        }
+    }
+
+    private static bool IsFinite(double value)
+    {
+        return !double.IsNaN(value) && !double.IsInfinity(value);
     }
 }
 
@@ -600,8 +650,8 @@ public sealed class UiSettings
 
 public sealed class WidgetWindowPlacement
 {
-    public double Left { get; set; } = double.NaN;
-    public double Top { get; set; } = double.NaN;
+    public double Left { get; set; } = 60;
+    public double Top { get; set; } = 60;
     public double Width { get; set; } = 920;
     public double Height { get; set; } = 590;
 }

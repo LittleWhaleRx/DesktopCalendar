@@ -106,7 +106,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <CheckBox x:Name="DesktopModeCheck" Content="嵌入桌面" Checked="DesktopModeCheck_Changed" Unchecked="DesktopModeCheck_Changed"/>
+                    <CheckBox x:Name="DesktopModeCheck" Content="桌面模式" Checked="DesktopModeCheck_Changed" Unchecked="DesktopModeCheck_Changed"/>
                     <CheckBox x:Name="LockCheck" Content="锁定位置" Checked="LockCheck_Changed" Unchecked="LockCheck_Changed"/>
                     <Button Style="{StaticResource ToolbarButtonStyle}" Content="—" Click="Minimize_Click" ToolTip="最小化"/>
                     <Button Style="{StaticResource ToolbarButtonStyle}" Content="×" Click="Close_Click" ToolTip="关闭"/>
