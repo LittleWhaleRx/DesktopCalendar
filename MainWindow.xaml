@@ -236,6 +236,11 @@
                               Checked="StartupCheck_Changed"
                               Unchecked="StartupCheck_Changed"/>
                     <Button Style="{StaticResource ToolbarButtonStyle}" Content="_" Click="Minimize_Click" ToolTip="最小化"/>
+                    <Button x:Name="MaximizeButton"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            Content="□"
+                            Click="Maximize_Click"
+                            ToolTip="最大化/还原"/>
                     <Button Style="{StaticResource ToolbarButtonStyle}" Content="X" Click="Close_Click" ToolTip="关闭"/>
                 </StackPanel>
             </Grid>
