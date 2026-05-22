@@ -59,12 +59,12 @@ internal sealed class WallpaperHost
             visual.UpdateLayout();
             var source = PresentationSource.FromVisual(window);
             var transform = source?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
-            var screen = Forms.Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1920, 1080);
-            var x = (int)Math.Round(window.Left * transform.M11) - screen.Left;
-            var y = (int)Math.Round(window.Top * transform.M22) - screen.Top;
+            var desktop = GetVirtualDesktopBounds();
+            var x = (int)Math.Round(window.Left * transform.M11) - desktop.Left;
+            var y = (int)Math.Round(window.Top * transform.M22) - desktop.Top;
 
             message = "已准备桌面背景";
-            return new PreparedWallpaper(state, RenderVisual(window, visual), screen, x, y);
+            return new PreparedWallpaper(state, RenderVisual(window, visual), desktop, x, y);
         }
         catch (Exception ex)
         {
@@ -79,7 +79,7 @@ internal sealed class WallpaperHost
         {
             using var wallpaper = RenderWallpaperWithCalendar(prepared);
             wallpaper.Save(_wallpaperPath, ImageFormat.Bmp);
-            SetWallpaperStyle("10", "0");
+            SetWallpaperStyle(IsMultiMonitor() ? "22" : "10", "0");
 
             if (!SetWallpaper(_wallpaperPath))
             {
@@ -207,8 +207,8 @@ internal sealed class WallpaperHost
 
     private string CreateCleanWallpaper()
     {
-        var screen = Forms.Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1920, 1080);
-        using var bitmap = new Bitmap(screen.Width, screen.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        var desktop = GetVirtualDesktopBounds();
+        using var bitmap = new Bitmap(desktop.Width, desktop.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using (var graphics = Graphics.FromImage(bitmap))
         {
             graphics.Clear(System.Drawing.Color.FromArgb(16, 20, 24));
@@ -220,20 +220,20 @@ internal sealed class WallpaperHost
 
     private static Bitmap RenderWallpaperWithCalendar(PreparedWallpaper prepared)
     {
-        var screen = prepared.Screen;
-        var output = new Bitmap(screen.Width, screen.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        var desktop = prepared.Desktop;
+        var output = new Bitmap(desktop.Width, desktop.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
         using (var graphics = Graphics.FromImage(output))
         {
             graphics.Clear(System.Drawing.Color.Black);
-            DrawExistingWallpaper(graphics, screen, prepared.State);
+            DrawExistingWallpaper(graphics, desktop, prepared.State);
             graphics.DrawImage(prepared.Calendar, prepared.X, prepared.Y, prepared.Calendar.Width, prepared.Calendar.Height);
         }
 
         return output;
     }
 
-    private static void DrawExistingWallpaper(Graphics graphics, Rectangle screen, WallpaperState state)
+    private static void DrawExistingWallpaper(Graphics graphics, Rectangle desktop, WallpaperState state)
     {
         if (string.IsNullOrWhiteSpace(state.WallpaperPath) || !File.Exists(state.WallpaperPath) || IsTemporaryWallpaper(state.WallpaperPath))
         {
@@ -243,7 +243,7 @@ internal sealed class WallpaperHost
         try
         {
             using var original = Image.FromFile(state.WallpaperPath);
-            var destination = CalculateWallpaperDestination(original, screen, state);
+            var destination = CalculateWallpaperDestination(original, desktop, state);
             graphics.DrawImage(original, destination);
         }
         catch
@@ -252,20 +252,33 @@ internal sealed class WallpaperHost
         }
     }
 
-    private static Rectangle CalculateWallpaperDestination(Image image, Rectangle screen, WallpaperState state)
+    private static Rectangle CalculateWallpaperDestination(Image image, Rectangle desktop, WallpaperState state)
     {
-        if (state.WallpaperStyle == "2")
+        if (state.WallpaperStyle is "2" or "22")
         {
-            return new Rectangle(0, 0, screen.Width, screen.Height);
+            return new Rectangle(0, 0, desktop.Width, desktop.Height);
         }
 
         var scale = state.WallpaperStyle == "6"
-            ? Math.Min(screen.Width / (double)image.Width, screen.Height / (double)image.Height)
-            : Math.Max(screen.Width / (double)image.Width, screen.Height / (double)image.Height);
+            ? Math.Min(desktop.Width / (double)image.Width, desktop.Height / (double)image.Height)
+            : Math.Max(desktop.Width / (double)image.Width, desktop.Height / (double)image.Height);
 
         var width = (int)Math.Round(image.Width * scale);
         var height = (int)Math.Round(image.Height * scale);
-        return new Rectangle((screen.Width - width) / 2, (screen.Height - height) / 2, width, height);
+        return new Rectangle((desktop.Width - width) / 2, (desktop.Height - height) / 2, width, height);
+    }
+
+    private static Rectangle GetVirtualDesktopBounds()
+    {
+        var bounds = Forms.SystemInformation.VirtualScreen;
+        return bounds is { Width: > 0, Height: > 0 }
+            ? bounds
+            : Forms.Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1920, 1080);
+    }
+
+    private static bool IsMultiMonitor()
+    {
+        return Forms.Screen.AllScreens.Length > 1;
     }
 
     private static Bitmap RenderVisual(Window window, FrameworkElement visual)
@@ -339,18 +352,18 @@ internal sealed class WallpaperHost
 
     internal sealed class PreparedWallpaper : IDisposable
     {
-        public PreparedWallpaper(WallpaperState state, Bitmap calendar, Rectangle screen, int x, int y)
+        public PreparedWallpaper(WallpaperState state, Bitmap calendar, Rectangle desktop, int x, int y)
         {
             State = state;
             Calendar = calendar;
-            Screen = screen;
+            Desktop = desktop;
             X = x;
             Y = y;
         }
 
         public WallpaperState State { get; }
         public Bitmap Calendar { get; }
-        public Rectangle Screen { get; }
+        public Rectangle Desktop { get; }
         public int X { get; }
         public int Y { get; }
 
