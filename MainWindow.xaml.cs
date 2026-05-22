@@ -36,6 +36,8 @@ public partial class MainWindow : Window
     private bool _isRenderingCalendar;
     private bool _isDesktopMode;
     private bool _isFormattingNote;
+    private bool _isWorkAreaMaximized;
+    private WidgetWindowPlacement? _restorePlacement;
     private IntPtr _windowHandle;
     private Forms.NotifyIcon? _trayIcon;
 
@@ -92,7 +94,7 @@ public partial class MainWindow : Window
 
     private void Window_PositionChanged(object sender, EventArgs e)
     {
-        if (!_isLoaded || _isLoading || _isDesktopMode)
+        if (!_isLoaded || _isLoading || _isDesktopMode || _isWorkAreaMaximized)
         {
             return;
         }
@@ -166,10 +168,28 @@ public partial class MainWindow : Window
 
     private void Maximize_Click(object sender, RoutedEventArgs e)
     {
-        WindowState = WindowState == WindowState.Maximized
-            ? WindowState.Normal
-            : WindowState.Maximized;
-        MaximizeButton.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+        if (_isWorkAreaMaximized)
+        {
+            RestoreFromWorkAreaMaximize();
+            return;
+        }
+
+        _restorePlacement = new WidgetWindowPlacement
+        {
+            Left = Left,
+            Top = Top,
+            Width = Width,
+            Height = Height
+        };
+
+        var screen = Forms.Screen.FromHandle(_windowHandle);
+        var workArea = screen.WorkingArea;
+        Left = workArea.Left;
+        Top = workArea.Top;
+        Width = workArea.Width;
+        Height = workArea.Height;
+        _isWorkAreaMaximized = true;
+        MaximizeButton.Content = "❐";
     }
 
     private void Close_Click(object sender, RoutedEventArgs e)
@@ -738,6 +758,21 @@ public partial class MainWindow : Window
         Focus();
     }
 
+    private void RestoreFromWorkAreaMaximize()
+    {
+        if (_restorePlacement is not null)
+        {
+            Left = _restorePlacement.Left;
+            Top = _restorePlacement.Top;
+            Width = _restorePlacement.Width;
+            Height = _restorePlacement.Height;
+        }
+
+        _isWorkAreaMaximized = false;
+        MaximizeButton.Content = "□";
+        SaveWindowPlacement();
+    }
+
     private static bool IsStartupEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
@@ -794,7 +829,7 @@ public partial class MainWindow : Window
 
     private void SaveWindowPlacement()
     {
-        if (WindowState != WindowState.Normal)
+        if (WindowState != WindowState.Normal || _isWorkAreaMaximized)
         {
             return;
         }
