@@ -758,7 +758,7 @@ public partial class MainWindow : Window
     {
         return Process.GetCurrentProcess().MainModule?.FileName
             ?? Environment.ProcessPath
-            ?? System.Reflection.Assembly.GetExecutingAssembly().Location;
+            ?? Path.Combine(AppContext.BaseDirectory, "DesktopCalendar.exe");
     }
 
     private void RestoreWindowPlacement()

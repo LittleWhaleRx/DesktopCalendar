@@ -7,3 +7,5 @@ obj/
 *.cache
 *.log
 TestResults/
+publish/
+dist/
