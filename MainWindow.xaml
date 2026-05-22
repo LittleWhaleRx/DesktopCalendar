@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="桌面台历"
-        Width="920"
-        Height="590"
-        MinWidth="720"
-        MinHeight="480"
+        Width="980"
+        Height="650"
+        MinWidth="760"
+        MinHeight="520"
         WindowStyle="None"
         AllowsTransparency="True"
         ResizeMode="CanResizeWithGrip"
@@ -20,7 +20,8 @@
         Loaded="Window_Loaded"
         Closing="Window_Closing"
         LocationChanged="Window_PositionChanged"
-        SizeChanged="Window_PositionChanged">
+        SizeChanged="Window_PositionChanged"
+        PreviewKeyDown="Window_PreviewKeyDown">
     <Window.Resources>
         <Style x:Key="ToolbarButtonStyle" TargetType="Button">
             <Setter Property="MinWidth" Value="32"/>
@@ -55,22 +56,131 @@
             </Setter>
         </Style>
 
-        <Style x:Key="InputBoxStyle" TargetType="TextBox">
+        <Style x:Key="DayNoteBoxStyle" TargetType="RichTextBox">
             <Setter Property="Foreground" Value="#F4F8FA"/>
-            <Setter Property="Background" Value="#1A000000"/>
-            <Setter Property="BorderBrush" Value="#22FFFFFF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="AcceptsReturn" Value="True"/>
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="CaretBrush" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="MinHeight" Value="46"/>
         </Style>
 
-        <Style TargetType="CheckBox">
+        <Style x:Key="HeaderCheckBoxStyle" TargetType="CheckBox">
             <Setter Property="Foreground" Value="#DCE8EE"/>
-            <Setter Property="Margin" Value="12,0,0,0"/>
+            <Setter Property="Margin" Value="8,0,4,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="DesktopButtonStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="138"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Margin" Value="3,0,8,0"/>
+            <Setter Property="Foreground" Value="#F4F8FA"/>
+            <Setter Property="Background" Value="#22FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.25"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonShell"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <Grid>
+                                <Border Height="13"
+                                        VerticalAlignment="Top"
+                                        CornerRadius="8,8,0,0"
+                                        Background="#22FFFFFF"/>
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  TextElement.FontWeight="SemiBold"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonShell" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="2"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Effect" Value="{x:Null}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemeComboStyle" TargetType="{x:Type ComboBox}">
+            <Setter Property="Foreground" Value="#F4F8FA"/>
+            <Setter Property="Background" Value="#2AFFFFFF"/>
+            <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton Focusable="False"
+                                          ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}"
+                                                BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                            <Grid>
+                                                <ContentPresenter Margin="10,0,24,0"
+                                                                  HorizontalAlignment="Left"
+                                                                  VerticalAlignment="Center"
+                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}"
+                                                                  TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}"/>
+                                                <Path Data="M 0 0 L 4 4 L 8 0 Z"
+                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}"
+                                                      HorizontalAlignment="Right"
+                                                      VerticalAlignment="Center"
+                                                      Margin="0,0,9,0"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   PopupAnimation="Fade">
+                                <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="2">
+                                    <ScrollViewer MaxHeight="220">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -83,11 +193,12 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="42"/>
+                <RowDefinition Height="34"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="28"/>
             </Grid.RowDefinitions>
 
-            <Grid x:Name="TitleBar" Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid x:Name="TitleBar" Grid.Row="0" Background="Transparent" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -95,9 +206,9 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="‹" Click="PreviousMonth_Click" ToolTip="上个月"/>
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="&lt;" Click="PreviousMonth_Click" ToolTip="上个月"/>
                     <Button Style="{StaticResource ToolbarButtonStyle}" Content="今天" Click="Today_Click"/>
-                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="›" Click="NextMonth_Click" ToolTip="下个月"/>
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="&gt;" Click="NextMonth_Click" ToolTip="下个月"/>
                     <TextBlock x:Name="MonthTitle"
                                Margin="14,0,0,0"
                                VerticalAlignment="Center"
@@ -106,105 +217,47 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <CheckBox x:Name="DesktopModeCheck" Content="桌面模式" Checked="DesktopModeCheck_Changed" Unchecked="DesktopModeCheck_Changed"/>
-                    <CheckBox x:Name="LockCheck" Content="锁定位置" Checked="LockCheck_Changed" Unchecked="LockCheck_Changed"/>
-                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="—" Click="Minimize_Click" ToolTip="最小化"/>
-                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="×" Click="Close_Click" ToolTip="关闭"/>
+                    <Button x:Name="DesktopModeButton"
+                            Style="{StaticResource DesktopButtonStyle}"
+                            Content="桌面模式"
+                            ToolTip="Shift+Enter"
+                            Click="DesktopModeButton_Click"/>
+                    <ComboBox x:Name="ThemeCombo"
+                              Style="{StaticResource ThemeComboStyle}"
+                              Width="106"
+                              Height="30"
+                              Margin="3,0"
+                              Padding="8,0"
+                              VerticalContentAlignment="Center"
+                              SelectionChanged="ThemeCombo_SelectionChanged"/>
+                    <CheckBox x:Name="StartupCheck"
+                              Style="{StaticResource HeaderCheckBoxStyle}"
+                              Content="开机自启"
+                              Checked="StartupCheck_Changed"
+                              Unchecked="StartupCheck_Changed"/>
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="_" Click="Minimize_Click" ToolTip="最小化"/>
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Content="X" Click="Close_Click" ToolTip="关闭"/>
                 </StackPanel>
             </Grid>
 
-            <Grid Grid.Row="1" Margin="0,10,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.08*"/>
-                    <ColumnDefinition Width="18"/>
-                    <ColumnDefinition Width="1*"/>
-                </Grid.ColumnDefinitions>
+            <UniformGrid Grid.Row="1" Rows="1" Columns="7" Margin="0,6,0,0">
+                <TextBlock Text="日" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+                <TextBlock Text="一" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+                <TextBlock Text="二" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+                <TextBlock Text="三" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+                <TextBlock Text="四" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+                <TextBlock Text="五" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+                <TextBlock Text="六" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
+            </UniformGrid>
 
-                <Grid Grid.Column="0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="34"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+            <ScrollViewer Grid.Row="2"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,4,0">
+                <Grid x:Name="CalendarGrid" Margin="0,0,0,0"/>
+            </ScrollViewer>
 
-                    <UniformGrid Grid.Row="0" Rows="1" Columns="7">
-                        <TextBlock Text="日" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                        <TextBlock Text="一" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                        <TextBlock Text="二" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                        <TextBlock Text="三" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                        <TextBlock Text="四" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                        <TextBlock Text="五" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                        <TextBlock Text="六" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
-                    </UniformGrid>
-
-                    <UniformGrid x:Name="CalendarGrid" Grid.Row="1" Rows="6" Columns="7"/>
-                </Grid>
-
-                <Grid Grid.Column="2">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="126"/>
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Margin="0,0,0,10">
-                        <TextBlock x:Name="SelectedDateTitle" FontSize="20" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="AnniversaryTodayLabel" Margin="0,4,0,0" Foreground="#A9D7E8"/>
-                    </StackPanel>
-
-                    <GroupBox Grid.Row="1" Header="工作计划" Foreground="#DCE8EE" Margin="0,0,0,10">
-                        <TextBox x:Name="PlanBox"
-                                 Style="{StaticResource InputBoxStyle}"
-                                 TextChanged="PlanBox_TextChanged"/>
-                    </GroupBox>
-
-                    <GroupBox Grid.Row="2" Header="当天完成" Foreground="#DCE8EE" Margin="0,0,0,10">
-                        <TextBox x:Name="DoneBox"
-                                 Style="{StaticResource InputBoxStyle}"
-                                 TextChanged="DoneBox_TextChanged"/>
-                    </GroupBox>
-
-                    <GroupBox Grid.Row="3" Header="纪念日" Foreground="#DCE8EE">
-                        <Grid Margin="0,4,0,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="AnniversaryInput"
-                                     Grid.Column="0"
-                                     Height="30"
-                                     Padding="8,4"
-                                     VerticalContentAlignment="Center"
-                                     Background="#1A000000"
-                                     Foreground="#F4F8FA"
-                                     BorderBrush="#22FFFFFF"
-                                     CaretBrush="#FFFFFF"/>
-                            <Button Grid.Column="1"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    Content="添加"
-                                    Click="AddAnniversary_Click"/>
-                            <Button Grid.Column="2"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    Content="删除"
-                                    Click="DeleteAnniversary_Click"/>
-                            <ListBox x:Name="AnniversaryList"
-                                     Grid.Row="1"
-                                     Grid.ColumnSpan="3"
-                                     Margin="0,8,0,0"
-                                     Background="Transparent"
-                                     Foreground="#F4F8FA"
-                                     BorderThickness="0"/>
-                        </Grid>
-                    </GroupBox>
-                </Grid>
-            </Grid>
-
-            <Grid Grid.Row="2" Margin="2,8,2,0">
+            <Grid Grid.Row="3" Margin="2,8,2,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="160"/>

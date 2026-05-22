@@ -4,7 +4,7 @@ using System.Windows.Threading;
 
 namespace DesktopCalendar;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -16,7 +16,7 @@ public partial class App : Application
     private static void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         LogException(e.Exception);
-        MessageBox.Show(
+        System.Windows.MessageBox.Show(
             "桌面台历遇到错误，已经自动拦截并写入日志。程序会继续运行。",
             "桌面台历",
             MessageBoxButton.OK,
