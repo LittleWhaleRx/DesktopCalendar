@@ -66,7 +66,8 @@ public partial class MainWindow : Window
         ThemeCombo.SelectedIndex = CalendarTheme.IndexOf(_theme.Name);
         StartupCheck.IsChecked = IsStartupEnabled();
         OpacitySlider.Value = _store.Ui.OpacityPercent;
-        MemoBox.Text = _store.Memo.Text;
+        MemoBox.Document = CreateNoteDocument();
+        SetNoteText(MemoBox, _store.Memo.Text);
         ApplyMemoPanelState(_store.Memo.IsOpen);
         _store.Ui.DesktopMode = false;
 
@@ -151,14 +152,13 @@ public partial class MainWindow : Window
 
     private void MemoBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_isLoading)
+        if (_isLoading || _isFormattingNote || sender is not WpfRichTextBox noteBox)
         {
             return;
         }
 
-        _store.Memo.Text = MemoBox.Text;
-        CalendarStore.Save(_dataPath, _store);
-        StatusText.Text = "备忘录已保存";
+        EnsureMainItemPrefix(noteBox);
+        SaveNoteBoxContent(noteBox);
     }
 
     private void StartupCheck_Changed(object sender, RoutedEventArgs e)
@@ -340,11 +340,7 @@ public partial class MainWindow : Window
         var noteBox = new WpfRichTextBox
         {
             Style = (Style)FindResource("DayNoteBoxStyle"),
-            Document = new FlowDocument
-            {
-                PagePadding = new Thickness(0),
-                LineStackingStrategy = LineStackingStrategy.BlockLineHeight
-            },
+            Document = CreateNoteDocument(),
             Tag = day.Date,
             IsEnabled = !_isDesktopMode,
             Opacity = isCurrentMonth ? 1 : 0.72,
@@ -415,14 +411,13 @@ public partial class MainWindow : Window
 
     private void DayNoteBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_isRenderingCalendar || _isLoading || _isFormattingNote || sender is not WpfRichTextBox { Tag: DateTime day } noteBox)
+        if (_isRenderingCalendar || _isLoading || _isFormattingNote || sender is not WpfRichTextBox noteBox)
         {
             return;
         }
 
-        SetDayNote(day, GetNoteText(noteBox));
-        CalendarStore.Save(_dataPath, _store);
-        StatusText.Text = $"{day:yyyy-MM-dd} 已保存";
+        EnsureMainItemPrefix(noteBox);
+        SaveNoteBoxContent(noteBox);
     }
 
     private void DayNoteBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -463,10 +458,12 @@ public partial class MainWindow : Window
         if (trimmed is "-" or "·")
         {
             SetNoteText(noteBox, string.Empty);
+            SaveNoteBoxContent(noteBox);
             return;
         }
 
         SetNoteText(noteBox, text);
+        SaveNoteBoxContent(noteBox);
     }
 
     private void InsertNoteText(WpfRichTextBox noteBox, string text)
@@ -479,10 +476,55 @@ public partial class MainWindow : Window
         var after = current[afterIndex..];
         var updated = before + text + after;
         SetNoteText(noteBox, updated, selectionStart + text.Length);
+        SaveNoteBoxContent(noteBox);
+    }
+
+    private static FlowDocument CreateNoteDocument()
+    {
+        return new FlowDocument
+        {
+            PagePadding = new Thickness(0),
+            LineStackingStrategy = LineStackingStrategy.BlockLineHeight
+        };
+    }
+
+    private void EnsureMainItemPrefix(WpfRichTextBox noteBox)
+    {
+        var text = GetNoteText(noteBox);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        var trimmedStart = text.TrimStart();
+        if (trimmedStart.StartsWith("-", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var firstTextIndex = text.Length - trimmedStart.Length;
+        var caretOffset = GetCaretOffset(noteBox);
+        var updated = text.Insert(firstTextIndex, "- ");
+        var updatedCaretOffset = caretOffset >= firstTextIndex ? caretOffset + 2 : caretOffset;
+        SetNoteText(noteBox, updated, updatedCaretOffset);
+    }
+
+    private void SaveNoteBoxContent(WpfRichTextBox noteBox)
+    {
+        var text = GetNoteText(noteBox);
         if (noteBox.Tag is DateTime day)
         {
-            SetDayNote(day, updated);
+            SetDayNote(day, text);
             CalendarStore.Save(_dataPath, _store);
+            StatusText.Text = $"{day:yyyy-MM-dd} 已保存";
+            return;
+        }
+
+        if (ReferenceEquals(noteBox, MemoBox))
+        {
+            _store.Memo.Text = text;
+            CalendarStore.Save(_dataPath, _store);
+            StatusText.Text = "备忘录已保存";
         }
     }
 
