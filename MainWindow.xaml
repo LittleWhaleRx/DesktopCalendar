@@ -68,6 +68,18 @@
             <Setter Property="MinHeight" Value="46"/>
         </Style>
 
+        <Style x:Key="MemoBoxStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="#F4F8FA"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="CaretBrush" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
         <Style x:Key="HeaderCheckBoxStyle" TargetType="CheckBox">
             <Setter Property="Foreground" Value="#DCE8EE"/>
             <Setter Property="Margin" Value="8,0,4,0"/>
@@ -222,6 +234,11 @@
                             Content="桌面模式"
                             ToolTip="Shift+Enter"
                             Click="DesktopModeButton_Click"/>
+                    <Button x:Name="MemoButton"
+                            Style="{StaticResource ToolbarButtonStyle}"
+                            Content="备忘录"
+                            ToolTip="展开/收起备忘录"
+                            Click="MemoButton_Click"/>
                     <ComboBox x:Name="ThemeCombo"
                               Style="{StaticResource ThemeComboStyle}"
                               Width="106"
@@ -255,12 +272,45 @@
                 <TextBlock Text="六" HorizontalAlignment="Center" Foreground="#9FB2BC"/>
             </UniformGrid>
 
-            <ScrollViewer Grid.Row="2"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Padding="0,0,4,0">
-                <Grid x:Name="CalendarGrid" Margin="0,0,0,0"/>
-            </ScrollViewer>
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition x:Name="MemoColumn" Width="0"/>
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer Grid.Column="0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,0,4,0">
+                    <Grid x:Name="CalendarGrid" Margin="0,0,0,0"/>
+                </ScrollViewer>
+
+                <Border x:Name="MemoPanel"
+                        Grid.Column="1"
+                        Visibility="Collapsed"
+                        Margin="10,0,0,0"
+                        Padding="10"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="MemoTitle"
+                                   Text="备忘录"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Margin="2,0,2,8"/>
+
+                        <TextBox x:Name="MemoBox"
+                                 Grid.Row="1"
+                                 Style="{StaticResource MemoBoxStyle}"
+                                 TextChanged="MemoBox_TextChanged"/>
+                    </Grid>
+                </Border>
+            </Grid>
 
             <Grid Grid.Row="3" Margin="2,8,2,0">
                 <Grid.ColumnDefinitions>

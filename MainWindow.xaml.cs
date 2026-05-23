@@ -66,6 +66,8 @@ public partial class MainWindow : Window
         ThemeCombo.SelectedIndex = CalendarTheme.IndexOf(_theme.Name);
         StartupCheck.IsChecked = IsStartupEnabled();
         OpacitySlider.Value = _store.Ui.OpacityPercent;
+        MemoBox.Text = _store.Memo.Text;
+        ApplyMemoPanelState(_store.Memo.IsOpen);
         _store.Ui.DesktopMode = false;
 
         _isLoading = false;
@@ -138,6 +140,25 @@ public partial class MainWindow : Window
         {
             TryEnterDesktopMode();
         }
+    }
+
+    private void MemoButton_Click(object sender, RoutedEventArgs e)
+    {
+        _store.Memo.IsOpen = !_store.Memo.IsOpen;
+        ApplyMemoPanelState(_store.Memo.IsOpen);
+        CalendarStore.Save(_dataPath, _store);
+    }
+
+    private void MemoBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isLoading)
+        {
+            return;
+        }
+
+        _store.Memo.Text = MemoBox.Text;
+        CalendarStore.Save(_dataPath, _store);
+        StatusText.Text = "备忘录已保存";
     }
 
     private void StartupCheck_Changed(object sender, RoutedEventArgs e)
@@ -605,6 +626,22 @@ public partial class MainWindow : Window
         DesktopModeButton.Foreground = _theme.TextBrush;
         DesktopModeButton.Background = _theme.ButtonBrush;
         DesktopModeButton.BorderBrush = _theme.AccentBrush;
+        MemoButton.Foreground = _theme.TextBrush;
+        MemoButton.Background = _theme.ButtonBrush;
+        MemoButton.BorderBrush = _theme.BorderBrush;
+        MemoPanel.Background = new SolidColorBrush(MediaColor.FromArgb(34, _theme.Day.R, _theme.Day.G, _theme.Day.B));
+        MemoPanel.BorderBrush = _theme.BorderBrush;
+        MemoTitle.Foreground = _theme.TextBrush;
+        MemoBox.Foreground = _theme.TextBrush;
+        MemoBox.CaretBrush = _theme.TextBrush;
+        MemoBox.Background = new SolidColorBrush(MediaColor.FromArgb(22, _theme.Surface.R, _theme.Surface.G, _theme.Surface.B));
+    }
+
+    private void ApplyMemoPanelState(bool isOpen)
+    {
+        MemoPanel.Visibility = isOpen ? Visibility.Visible : Visibility.Collapsed;
+        MemoColumn.Width = isOpen ? new GridLength(300) : new GridLength(0);
+        MemoButton.Content = isOpen ? "收起备忘录" : "备忘录";
     }
 
     private void TryEnterDesktopMode()
@@ -907,6 +944,7 @@ public sealed class CalendarStore
 {
     public Dictionary<string, DayRecord> Days { get; set; } = new();
     public UiSettings Ui { get; set; } = new();
+    public MemoSettings Memo { get; set; } = new();
 
     public static CalendarStore Load(string path)
     {
@@ -950,6 +988,7 @@ public sealed class CalendarStore
         store.Ui ??= new UiSettings();
         store.Ui.Window ??= new WidgetWindowPlacement();
         store.Days ??= new Dictionary<string, DayRecord>();
+        store.Memo ??= new MemoSettings();
 
         foreach (var record in store.Days.Values)
         {
@@ -991,6 +1030,12 @@ public sealed class CalendarStore
     {
         return !double.IsNaN(value) && !double.IsInfinity(value);
     }
+}
+
+public sealed class MemoSettings
+{
+    public string Text { get; set; } = string.Empty;
+    public bool IsOpen { get; set; }
 }
 
 public sealed class DayRecord
